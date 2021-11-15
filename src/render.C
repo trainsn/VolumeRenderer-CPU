@@ -957,15 +957,13 @@ int volumeRender::readCmapFile(char *filename)
     if (!in)
         return (0);
 
-    char buf[81], cname[81];
-    int type, numRegions, numCP;
+    char buf[81];
     int i, j, total;
     float norm_min, norm_max, vol_min, vol_max;
     float red, green, blue, opac;
 
     if (fgets(buf, 81, in))
-        sscanf(buf, "%s%d%d%d%f%f%f%f", cname, &type, &numRegions,
-                    &lookupSize, &norm_min, &norm_max, &vol_min, &vol_max);
+        sscanf(buf, "%d%f%f%f%f", &lookupSize, &norm_min, &norm_max, &vol_min, &vol_max);
 
     float range = vol_max - vol_min;
     curMin = vol_min + norm_min * range;
