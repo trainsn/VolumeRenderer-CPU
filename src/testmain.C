@@ -31,15 +31,13 @@ int main(int argc, char* argv[]) {
   fread(&ydim, sizeof(int), 1, in);
   fread(&zdim, sizeof(int), 1, in);
 
-  int junk =1; 
-  //  fread(&junk, sizeof(int), 1, in);
-  printf(" %d %d %d %d\n", xdim, ydim, zdim, junk); 
+  printf(" %d %d %d\n", xdim, ydim, zdim); 
 
-  int size = xdim*ydim*zdim;
+  int size = xdim * ydim * zdim;
   float *volume = new float[size];
   fread(volume, sizeof(float), size, in);
 
-  volumeRender vr(xdim,ydim,zdim,udim,vdim,volume); 
+  volumeRender vr(xdim, ydim, zdim, udim, vdim, volume); 
   vr.readCmapFile(argv[4]); 
   vr.set_view(alpha, beta, gamma); 
   vr.execute(); 

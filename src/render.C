@@ -967,28 +967,11 @@ int volumeRender::readCmapFile(char *filename)
         sscanf(buf, "%s%d%d%d%f%f%f%f", cname, &type, &numRegions,
                     &lookupSize, &norm_min, &norm_max, &vol_min, &vol_max);
 
-
     float range = vol_max - vol_min;
     curMin = vol_min + norm_min * range;
     curMax = vol_min + norm_max * range;
 
     float *ctable = new float[4*lookupSize];
-
-    // read numCP for index transfer function
-    fgets(buf, 81, in);
-    sscanf(buf, "%s%d%d", cname, &type, &numCP);
-
-    // skip control points for index transfer function
-    for ( i=0; i < numCP; i++)
-         fgets(buf, 81, in);
-
-    // skip control points for color transfer functions
-    for ( i=0; i < 4; i++) {
-         fgets(buf, 81, in);
-         sscanf(buf, "%d%d", &type, &numCP);
-         for (j = 0; j < numCP; j++)
-              fgets(buf, 81, in);
-    }
 
     i = 0;
     total = 4 * lookupSize;
