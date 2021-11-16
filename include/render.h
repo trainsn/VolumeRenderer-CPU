@@ -14,10 +14,13 @@
 #include <strings.h>
 #include <unistd.h>
 #include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform2.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "image.h"
 #include "Map.h"
-#include "Trans_Stack.h"
 #include "minmax.h"
 
 #define EPS 1.0E-6
@@ -39,8 +42,8 @@
 #define ambient_light  1
 #define light_strength 5
 
-static float eye_W[4] =  {0,0,1,0};	/* eye vector */
-static float light_W[4] = {0.40824829,0.40824829,0.816496,0};  
+static glm::vec4 eye_W(0.0f, 0.0f, 1.0f, 0.0f); 	/* eye vector */
+static glm::vec4 light_W(0.40824829f, 0.40824829f, 0.816496f, 0.0f);  
 
 void Image_to_File(image_type*, char*); 
 
@@ -83,7 +86,7 @@ protected:
   VolumePtr vptr; 
 
   void get_bounds(); 
-  void update_bounds(float q[4]); 
+  void update_bounds(glm::vec4 q); 
 
   uvw  *gradient;           // volume gradient
   int has_gradient; 
@@ -118,22 +121,22 @@ protected:
   uvw eye, light, h, eye_nonN;   // eye, light, and half vector
                             // in the data coordinate system
 
-  Matrix screen_to_data;    // mapping between different 
-  Matrix data_to_world;     // coordinate systems
-  Matrix world_to_data; 
+  glm::mat4 screen_to_data;    // mapping between different 
+  glm::mat4 data_to_world;     // coordinate systems
+  glm::mat4 world_to_data; 
 
   int UNIFORM_FLAG; 
   float UNIFORM_VAL; 
 
-  int get_value(float p[4], float*,
+  int get_value(glm::vec4 p, float*,
                 interpolation_state*); 
 
   int get_normal(uvw*, interpolation_state*); 
 
-  void local_lighting(float*, interpolation_state*, 
+  void local_lighting(glm::vec4, interpolation_state*, 
                       float obj_color[4], float result[3]); 
 
-  void local_lighting(float*, 
+  void local_lighting(glm::vec4, 
                       float obj_color[4], float result[3]); 
 
   void depth_lighting(float*, interpolation_state*, 
@@ -191,7 +194,7 @@ public:
 
   int  readCmapFile(char *filename);
 
-  Matrix data_to_screen;    // transformation matrixes for 
+  glm::mat4 data_to_screen;    // transformation matrixes for 
 
   void setColorMap(int size, float* ctable); 
 
