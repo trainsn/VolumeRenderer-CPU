@@ -5,21 +5,17 @@
 using namespace std;
 
 void usage(char* prgm) {
-	printf(" usage: %s udim vdim volume colormap alpha beta gamma out \n",
+	printf(" usage: %s udim vdim volume colormap\n",
 		prgm);
 	exit(0);
 }
 
 int main(int argc, char* argv[]) {
 
-	if (argc != 9) usage(argv[0]);
+	if (argc != 5) usage(argv[0]);
 
 	int udim = atoi(argv[1]);
 	int vdim = atoi(argv[2]);
-
-	float alpha = (float)atoi(argv[5]);
-	float beta = (float)atoi(argv[6]);
-	float gamma = (float)atoi(argv[7]);
 
 	int xdim = 256, ydim = 256, zdim = 256;
 	long long int size = xdim * ydim;
@@ -48,7 +44,7 @@ int main(int argc, char* argv[]) {
 	vr.computeVolMinMax(volume, size, vol_min, vol_max);
 	cout << vol_min << " " << vol_max << endl;
 	vr.readCmapFile(argv[4]);
-	vr.set_view(alpha, beta, gamma);
+	vr.set_view();
 	vr.execute();
-	vr.out_to_image(argv[8]);
+	vr.out_to_image("../res/a.png");
 }

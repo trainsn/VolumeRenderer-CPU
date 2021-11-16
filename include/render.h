@@ -18,6 +18,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform2.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "image.h"
 #include "Map.h"
@@ -116,14 +117,12 @@ protected:
   // image bound 
   int umin, umax, vmin, vmax, wmin, wmax; 
 
-  float xangle, yangle, zangle; 
-
   uvw eye, light, h, eye_nonN;   // eye, light, and half vector
                             // in the data coordinate system
 
   glm::mat4 screen_to_data;    // mapping between different 
-  glm::mat4 data_to_world;     // coordinate systems
-  glm::mat4 world_to_data; 
+  glm::mat4 data_to_view;     // coordinate systems
+  glm::mat4 view_to_data; 
 
   int UNIFORM_FLAG; 
   float UNIFORM_VAL; 
@@ -198,8 +197,8 @@ public:
 
   void setColorMap(int size, float* ctable); 
 
-  // rotation angle: alpha, beta, gamma 
-  void set_view(float xA, float yA, float zA);
+  // viewpoint 
+  void set_view();
 
   void get_viewing_bbx(int& imin,int& imax,int& jmin,
 		       int& jmax,int& kmin,int& kmax) {
@@ -222,8 +221,6 @@ public:
   void get_eye_vector(float&, float&, float&);  // in data space  
 
   float distance_to_viewplane(float, float, float); 
-
-  void set_image_size(int usize, int vsize); 
 
   void get_image_dims(int& usize, int& vsize) {
                       usize = udim; vsize = vdim; }

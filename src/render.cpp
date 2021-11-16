@@ -40,8 +40,7 @@ using namespace std;
 volumeRender::volumeRender(int xsize, int ysize, int zsize,
 	int usize, int vsize,
 	void* volume) :
-	udim(usize), vdim(vsize), xangle(0),
-	yangle(0), zangle(0), gradient(NULL), image(NULL)
+	udim(usize), vdim(vsize), gradient(NULL), image(NULL)
 {
 	set_volume_simple(0, xsize - 1, 0, ysize - 1, 0, zsize - 1, volume);
 	//  image = image_new(0,udim-1,0,vdim-1);
@@ -785,6 +784,7 @@ void volumeRender::update_transform()
 	int dmax;
 	float  sc, zscale;
 
+	// cout << vxmin << " " << vxmax << " " << vymin << " " << vymax << " " << vzmin << " " << vzmax << endl;
 	float vxcenter = (vxmin + vxmax) / 2.0;
 	float vycenter = (vymin + vymax) / 2.0;
 	float vzcenter = (vzmin + vzmax) / 2.0;
@@ -792,33 +792,36 @@ void volumeRender::update_transform()
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(glm::vec3(-vxcenter, -vycenter, -vzcenter)) * model;
 	dmax = MAX(vxdim, MAX(vydim, vzdim));
+	// cout << vxdim << " " << vxdim << " " << vxdim << endl;
 	sc = 0.65 * 2.0 / (float)dmax;
 	model = glm::scale(glm::vec3(sc, sc, sc)) * model;
 
-	while (xangle < 0)   xangle += 360.0;
-	while (xangle > 360) xangle -= 360.0;
-	while (yangle < 0)   yangle += 360.0;
-	while (yangle > 360) yangle -= 360.0;
-	while (zangle < 0)   zangle += 360.0;
-	while (zangle > 360) zangle -= 360.0;
+	// transform
+	float theta = M_PI / 2;
+	float phi = M_PI / 4 * 3;
+	float dist = 2.0f;
+	glm::vec3 direction = glm::vec3(sin(theta) * cos(phi) * dist, sin(theta) * sin(phi) * dist, cos(theta) * dist);
+	glm::vec3 up = glm::vec3(sin(theta - M_PI / 2) * cos(phi), sin(theta - M_PI / 2) * sin(phi), cos(theta - M_PI / 2));
+	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 eye = center + direction;
 
-	model = glm::rotate(xangle, glm::vec3(1.0f, 0.0f, 0.0f)) * model;
-	model = glm::rotate(yangle, glm::vec3(0.0f, 1.0f, 0.0f)) * model;
-	model = glm::rotate(zangle, glm::vec3(0.0f, 0.0f, 1.0f)) * model;
-	data_to_world = model;
-	world_to_data = glm::inverse(data_to_world);
+	glm::mat4 view = glm::lookAt(eye, center, up);
+
+	data_to_view = view * model;
+	view_to_data = glm::inverse(data_to_view);
 
 	// Now add in the additional parts of the transform that
 	// thansform to screen space.  The Z axis is scaled so that
 	// the sample spacing is +1.0 in screen space.  
 	//
-	glm::mat4 pMatrix = glm::mat4(1.0f);
-	pMatrix = glm::scale(glm::vec3(1.0f, -1.0f, -1.0f)) * pMatrix; // flip over the image, and reverse Z 
-	pMatrix = glm::translate(glm::vec3(1.0f, 1.0f, 1.0f)) * pMatrix;
-	zscale = 1.0 / (sc * STEPSIZE);
-	pMatrix = glm::scale(glm::vec3((float)udim / 2.0, (float)vdim / 2.0, zscale)) * pMatrix;
+	glm::mat4 pMatrix = glm::scale(glm::vec3(1.0f, 1.0f, -1.0f)); // reverse Z
+	// cout << glm::to_string(pMatrix) << endl;
 
-	data_to_screen = pMatrix * data_to_world; 
+	glm::mat4 sMatrix = glm::translate(glm::vec3(1.0f, 1.0f, 1.0f));
+	zscale = 1.0 / (sc * STEPSIZE);
+	sMatrix = glm::scale(glm::vec3((float)udim / 2.0, (float)vdim / 2.0, zscale)) * sMatrix;
+
+	data_to_screen = sMatrix * pMatrix * data_to_view; 
 	screen_to_data = glm::inverse(data_to_screen);
 }
 ////////////////////////////////////////////////////////////////////
@@ -828,10 +831,10 @@ void volumeRender::update_transform()
 void volumeRender::update_viewing()
 {
 	// Transform the light vector from world space to data space 
-	glm::vec4 dlight = world_to_data * light_W;
+	glm::vec4 dlight = view_to_data * light_W;
 
 	// Transform the eye vector from world space to data space 
-	glm::vec4 deye = world_to_data * eye_W;
+	glm::vec4 deye = view_to_data * eye_W;
 
 	light.u = dlight[0];
 	light.v = dlight[1];
@@ -854,11 +857,8 @@ void volumeRender::update_viewing()
 //
 //                  set the rendering view 
 //
-void volumeRender::set_view(float xA, float yA, float zA)
+void volumeRender::set_view()
 {
-	xangle = xA;
-	yangle = yA;
-	zangle = zA;
 	update_transform();  // create new transformation matrixes
 	update_viewing();    // create new eye, light, and half vectors
 }
@@ -1009,14 +1009,6 @@ int volumeRender::readCmapFile(char *filename)
 	setColorMap(dimension, transferFunction);
 
 	return (1);
-}
-
-void volumeRender::set_image_size(int usize, int vsize)
-{
-	udim = usize; vdim = vsize;
-	if (image != NULL) free(image);
-	image = image_new(0, udim - 1, 0, vdim - 1);
-	set_view(xangle, yangle, zangle);
 }
 
 //////////////////////////////////////////////////////////////////////
