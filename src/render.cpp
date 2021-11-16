@@ -24,6 +24,9 @@
 #include "Trans_Stack.h"
 #include "minmax.h"
 #include "render_aux.h"
+#define STBI_MSC_SECURE_CRT
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #define  STEPSIZE  0.9
 
@@ -498,37 +501,24 @@ void volumeRender::update_bounds(float q[4])
 
 /////////////////////////////////////////////////////
 //
-//  Output to an ASCII ppm file 
+//  Output to a PNG file 
 //
 void volumeRender::out_to_image(char* filename)
 {
-  unsigned char* red   = new unsigned char[udim*vdim]; 
-  unsigned char* green = new unsigned char[udim*vdim]; 
-  unsigned char* blue  = new unsigned char[udim*vdim]; 
+  stbi_flip_vertically_on_write(1);
+  unsigned char* pImage = new unsigned char[udim * vdim * 3];
 
-  for (int i=umin; i<=umax; i++)     // loop over each pixel 
-    for (int j=vmin; j<=vmax; j++) {
-      int idx = i*vdim+j; 
+  for (int i = umin; i <= umax; i++)     // loop over each pixel 
+    for (int j = vmin; j <= vmax; j++) {
+      int idx = i * vdim + j; 
       pixel *p = image_index(image, i, j); 
-      red[idx]   = (unsigned char) (p->bp.r); 
-      green[idx] = (unsigned char) (p->bp.g); 
-      blue[idx]  = (unsigned char) (p->bp.b); 
+      pImage[idx * 3 + 0]   = (unsigned char) (p->bp.r); 
+      pImage[idx * 3 + 1] = (unsigned char) (p->bp.g); 
+      pImage[idx * 3 + 2]  = (unsigned char) (p->bp.b); 
     }
 
-  FILE* out = fopen(filename, "w"); 
-  fprintf(out, "P3\n"); 
-  fprintf(out, "%d  %d\n", udim, vdim); 
-  fprintf(out, "%d\n", 256); 
-
-  for (int i=0; i<udim; i++)
-    for (int j=vdim-1; j>=0; j--) {
-      int idx = j*udim+i; 
-      fprintf(out, "%d %d %d\n", red[idx], 
-	      green[idx], blue[idx]); 
-    }
-  fclose(out); 
-
-  delete []red;   delete []green;   delete []blue; 
+  stbi_write_png(filename, vdim, udim, 3, pImage, vdim * 3);
+  delete pImage;
 }
 
 ///////////////////////////////////////////////////////////////////
