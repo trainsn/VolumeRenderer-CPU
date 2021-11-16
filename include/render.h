@@ -125,8 +125,6 @@ protected:
   int UNIFORM_FLAG; 
   float UNIFORM_VAL; 
 
-  float curMin, curMax; 
-
   int get_value(float p[4], float*,
                 interpolation_state*); 
 
@@ -221,12 +219,6 @@ public:
   void get_eye_vector(float&, float&, float&);  // in data space  
 
   float distance_to_viewplane(float, float, float); 
-
-  void set_min_max(float min, float max) {
-    curMin = min; curMax = max; }
-
-  void get_min_max(float& min, float& max) {
-    min = curMin; max = curMax; }
 
   void set_image_size(int usize, int vsize); 
 

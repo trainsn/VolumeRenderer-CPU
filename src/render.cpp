@@ -13,6 +13,7 @@
 //
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -29,6 +30,8 @@
 #include "stb_image_write.h"
 
 #define  STEPSIZE  0.9
+
+using namespace std;
 
 /////////////////////////////////////////////////////////////
 //
@@ -922,9 +925,9 @@ void volumeRender::get_eye_vector(float &ex, float &ey, float&ez)
 ////////////////////////////////////////////////////////////////////
 int volumeRender::mapLookup(float val, float rgba[4])
 {
-  int id =  (int)(((val - curMin) * lookupSize)/(curMax-curMin)); 
-  if (id <0) id = 0; 
-  else if (id >=lookupSize) id = lookupSize-1; 
+  int id =  (int)(val / 12.5 * 255); 
+  if (id < 0) id = 0; 
+  else if (id >= lookupSize) id = lookupSize-1; 
   int cid = id*4; 
   rgba[0] = lookup[cid];   rgba[1] = lookup[cid+1]; 
   rgba[2] = lookup[cid+2]; rgba[3] = lookup[cid+3]; 
@@ -941,40 +944,90 @@ void volumeRender::setColorMap(int table_size, float *table)
 
 int volumeRender::readCmapFile(char *filename)
 {
-    FILE *in;
+  cout << filename << endl;
+  FILE *fp;
+  if (!(fp = fopen(filename, "rb"))) {
+    cout << "Error: opening .tf1d file failed" << endl;
+    exit(EXIT_FAILURE);
+  }
+  else {
+    cout << "OK: open .tf1d file successed" << endl;
+  }
 
-    in = fopen(filename, "r");
-    if (!in)
-        return (0);
+  int keyNum;
+  float thresholdL, thresholdU;
+  fscanf(fp, "%d %f %f\n", &keyNum, &thresholdL, &thresholdU);
 
-    char buf[81];
-    int i, j, total;
-    float norm_min, norm_max, vol_min, vol_max;
-    float red, green, blue, opac;
+  float *intensity = new float[keyNum],
+    *rl = new float[keyNum],
+    *gl = new float[keyNum],
+    *bl = new float[keyNum],
+    *al = new float[keyNum],
+    *rr = new float[keyNum],
+    *gr = new float[keyNum],
+    *br = new float[keyNum],
+    *ar = new float[keyNum];
+  for (int i = 0; i < keyNum; i++) {
+    fscanf(fp, "%f %f %f %f %f %f %f %f %f", &intensity[i],
+      &rl[i], &gl[i], &bl[i], &al[i], &rr[i], &gr[i], &br[i], &ar[i]);
+  }
 
-    if (fgets(buf, 81, in))
-        sscanf(buf, "%d%f%f%f%f", &lookupSize, &norm_min, &norm_max, &vol_min, &vol_max);
+  int dimension = 256;
+  float *transferFunction = new float[dimension * 4];
 
-    float range = vol_max - vol_min;
-    curMin = vol_min + norm_min * range;
-    curMax = vol_min + norm_max * range;
+  int frontEnd = (int)floor(thresholdL * dimension + 0.5);
+  int backStart = (int)floor(thresholdU * dimension + 0.5);
+  //all values before front_end and after back_start are set to zero
+  //all other values remain the same
+  for (int x = 0; x < frontEnd; x++) {
+    transferFunction[x * 4 + 0] = 0;
+    transferFunction[x * 4 + 1] = 0;
+    transferFunction[x * 4 + 2] = 0;
+    transferFunction[x * 4 + 3] = 0;
+  }
 
-    float *ctable = new float[4*lookupSize];
-
-    i = 0;
-    total = 4 * lookupSize;
-    while (fgets(buf, 81, in) && i < total) {
-         sscanf(buf, "%f%f%f%f", &red, &green, &blue, &opac);
-         ctable[i++] = red;
-         ctable[i++] = green;
-         ctable[i++] = blue;
-         ctable[i++] = opac;
+  float r, g, b, a;
+  int keyIterator = 0;
+  for (int x = frontEnd; x < backStart; x++) {
+    float value = (float)x / (dimension - 1);
+    while (keyIterator < keyNum && value > intensity[keyIterator])
+      keyIterator++;
+    if (keyIterator == 0) {
+      r = rl[keyIterator];
+      g = gl[keyIterator];
+      b = bl[keyIterator];
+      a = al[keyIterator];
     }
-    fclose(in);
+    else if (keyIterator == keyNum) {
+      r = rr[keyIterator - 1];
+      g = gr[keyIterator - 1];
+      b = br[keyIterator - 1];
+      a = ar[keyIterator - 1];
+    }
+    else {
+      float fraction = (value - intensity[keyIterator - 1]) / (intensity[keyIterator] - intensity[keyIterator - 1]);
+      r = rr[keyIterator - 1] + (rl[keyIterator] - rr[keyIterator - 1]) * fraction;
+      g = gr[keyIterator - 1] + (gl[keyIterator] - gr[keyIterator - 1]) * fraction;
+      b = br[keyIterator - 1] + (bl[keyIterator] - br[keyIterator - 1]) * fraction;
+      a = ar[keyIterator - 1] + (al[keyIterator] - ar[keyIterator - 1]) * fraction;
+    }
 
-    setColorMap(lookupSize, ctable);
+    transferFunction[x * 4 + 0] = r;
+    transferFunction[x * 4 + 1] = g;
+    transferFunction[x * 4 + 2] = b;
+    transferFunction[x * 4 + 3] = a;
+  }
 
-    return (1);
+  for (int x = backStart; x < dimension; x++) {
+    transferFunction[x * 4 + 0] = 0;
+    transferFunction[x * 4 + 1] = 0;
+    transferFunction[x * 4 + 2] = 0;
+    transferFunction[x * 4 + 3] = 0;
+  }
+
+  setColorMap(dimension, transferFunction);
+
+  return (1);
 }
 
 void volumeRender::set_image_size(int usize, int vsize)
