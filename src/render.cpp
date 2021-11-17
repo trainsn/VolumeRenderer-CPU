@@ -506,7 +506,7 @@ void volumeRender::out_to_image(char* filename)
 	stbi_flip_vertically_on_write(1);
 	unsigned char* pImage = new unsigned char[udim * vdim * 3];
 	for (int i = 0; i < udim * vdim * 3; i++){
-		pImage[i] = (unsigned char)255;
+		pImage[i] = (unsigned char)0;
 	}
 
 	for (int i = umin; i <= umax; i++)     // loop over each pixel 
@@ -625,7 +625,7 @@ void volumeRender::render()
 				sumalpha = alphalut[step_count - 1];
 			}
 			// blend with background 
-			float bg_red = 1.0, bg_green = 1.0, bg_blue = 1.0;
+			float bg_red = 0.0, bg_green = 0.0, bg_blue = 0.0;
 			sumred += bg_red * (1.0 - sumalpha);
 			sumgreen += bg_green * (1.0 - sumalpha);
 			sumblue += bg_blue * (1.0 - sumalpha); 
@@ -797,8 +797,8 @@ void volumeRender::update_transform()
 	model = glm::scale(glm::vec3(sc, sc, sc)) * model;
 
 	// transform
-	float theta = M_PI / 2;
-	float phi = M_PI / 4 * 3;
+	float theta = -M_PI / 3.0f;
+	float phi = 300.0f * M_PI / 180.0f;
 	float dist = 2.0f;
 	glm::vec3 direction = glm::vec3(sin(theta) * cos(phi) * dist, sin(theta) * sin(phi) * dist, cos(theta) * dist);
 	glm::vec3 up = glm::vec3(sin(theta - M_PI / 2) * cos(phi), sin(theta - M_PI / 2) * sin(phi), cos(theta - M_PI / 2));
